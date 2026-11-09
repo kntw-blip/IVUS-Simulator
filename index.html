@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IVUSシミュレータ</title>
+<meta name="description" content="合成IVUS断層像とシネ画像を同期表示し、石灰化・減衰プラーク・LMT分岐部・ステント最適化の治療戦略と手技を体験できる教育用シミュレータ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+JP:wght@400;500;700&family=Saira+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="bar">
+  <button id="homeBtn" class="brand" type="button" aria-label="ケース一覧へ戻る">IVUS<span>SIM</span></button>
+  <div id="caseTitle" class="case-title"></div>
+  <div id="vitals" class="vitals" aria-live="polite"></div>
+</header>
+
+<main id="home" class="home">
+  <section class="hero">
+    <div class="hero-img">
+      <canvas id="heroIvus" aria-label="IVUS断層像のプレビュー（合成画像）"></canvas>
+      <div class="hero-read" id="heroRead"></div>
+    </div>
+    <div class="hero-text">
+      <p class="eyebrow">冠動脈インターベンション・トレーニング</p>
+      <h1>IVUS<br>シミュレータ</h1>
+      <p class="lead">合成したIVUS断層像とシネ画像を同期させて読影し、治療戦略を立て、バルーン・ステント・アテレクトミーを自分の手で操作します。治療後のIVUSで結果を確認し、EAPCI・ULTIMATE基準で評価します。</p>
+      <div class="setting">
+        <span class="setting-label">IVUSカテーテル</span>
+        <div class="seg" role="radiogroup" aria-label="IVUSカテーテルの種類">
+          <button type="button" class="seg-btn on" data-freq="60" id="freq60">60 MHz 機械式</button>
+          <button type="button" class="seg-btn" data-freq="20" id="freq20">20 MHz 電子式</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="cases" id="caseList" aria-label="ケース一覧"></section>
+  <section class="notes">
+    <h2>このシミュレータについて</h2>
+    <ul>
+      <li>IVUS画像・シネ画像はすべてプログラムで合成したもので、実在の患者画像ではありません。</li>
+      <li>デバイスの挙動（コンプライアンス、最大拡張径、通過性など）はシミュレータ上の設定値です。実際の使用時は各製品の添付文書に従ってください。</li>
+      <li>判定基準: EAPCI専門家コンセンサス（Räber 2018）、ULTIMATE基準（Zhang 2018）、LM 5-6-7-8ルール（Kang 2011）、IVUSカルシウムスコア（Zhang 2021）。</li>
+    </ul>
+  </section>
+</main>
+
+<main id="caseView" class="case" hidden>
+  <div class="stage">
+    <div class="panel angio-panel">
+      <div class="ptag">CINE<span>合成アンギオ・タップで位置を同期</span></div>
+      <canvas id="angio" aria-label="シネ画像。タップするとIVUSの位置が移動します"></canvas>
+    </div>
+    <div class="panel ivus-panel">
+      <div class="ptag">IVUS<span id="ivusTag">60 MHz</span><span id="viewTag" class="vtag"></span></div>
+      <div class="ivus-wrap">
+        <canvas id="ivus" aria-label="IVUS断層像"></canvas>
+        <canvas id="ivusOv"></canvas>
+      </div>
+    </div>
+    <div class="panel lmode-panel">
+      <div class="ptag">L-MODE<span>左＝遠位　右＝近位（プルバック方向 →）</span></div>
+      <canvas id="lmode" aria-label="長軸像。タップで位置を移動"></canvas>
+    </div>
+    <div class="transport">
+      <button type="button" id="playBtn" class="btn primary small">▶ プルバック</button>
+      <button type="button" id="stepBack" class="btn icon" aria-label="遠位へ0.2 mm">−</button>
+      <input type="range" id="zSlider" min="0" max="60" step="0.2" value="0" aria-label="トランスデューサ位置（mm）">
+      <button type="button" id="stepFwd" class="btn icon" aria-label="近位へ0.2 mm">＋</button>
+      <output id="zRead" class="mono">0.0 mm</output>
+      <label class="sel"><span>速度</span>
+        <select id="speedSel"><option value="0.5">0.5 mm/s</option><option value="1">1 mm/s</option><option value="2" selected>2 mm/s</option><option value="5">5 mm/s</option></select>
+      </label>
+    </div>
+    <div class="toggles">
+      <button type="button" class="chip on" id="tContours">自動計測</button>
+      <button type="button" class="chip" id="tLabels">所見ラベル</button>
+      <button type="button" class="chip on" id="tMotion">心拍動</button>
+      <button type="button" class="chip" id="tFreq">60 MHz</button>
+      <span class="chip-group" role="group" aria-label="計測ツール">
+        <button type="button" class="chip" id="toolDist">距離</button>
+        <button type="button" class="chip" id="toolArc">角度</button>
+      </span>
+      <span class="chip-group" id="cmpGroup" role="group" aria-label="表示する画像">
+        <button type="button" class="chip on" id="vLatest">最新</button>
+        <button type="button" class="chip" id="vPre">治療前</button>
+      </span>
+      <label class="sel cut"><span>L断面</span><input type="range" id="cutSlider" min="0" max="179" step="1" value="0" aria-label="L-mode断面の角度"></label>
+    </div>
+  </div>
+  <aside class="side">
+    <nav class="steps" id="steps" aria-label="進行"></nav>
+    <div id="dock" class="dock" hidden></div>
+    <div id="sideBody" class="side-body"></div>
+  </aside>
+</main>
+
+<div id="modal" class="modal" hidden role="dialog" aria-modal="true"></div>
+<div id="toast" class="toast" aria-live="assertive"></div>
+
+<script src="js/model.js"></script>
+<script src="js/ivus.js"></script>
+<script src="js/scenarios.js"></script>
+<script src="js/treat.js"></script>
+<script src="js/angio.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
