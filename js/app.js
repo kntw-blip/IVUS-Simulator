@@ -70,6 +70,7 @@
     t.textContent = msg; t.className = 'toast show ' + (kind || '');
     clearTimeout(toastT); toastT = setTimeout(() => (t.className = 'toast'), 2600);
   }
+  IV.toast = toast;
   function setFreq(f) {
     S.freq = f;
     ivusR.setMode(f); heroR.setMode(f);
@@ -128,6 +129,7 @@
     renderVitals();
     renderSide();
     window.scrollTo(0, 0);
+    setTimeout(() => IV.help.tour('case'), 450);
   }
 
   function viewSrc() {
@@ -191,15 +193,26 @@
     nav.innerHTML = STEPS.map((s, i) => `<div class="step ${i === cur ? 'on' : i < cur ? 'done' : ''}"><b>${s[1]}</b>${s[2]}</div>`).join('');
   }
 
+  const PHASE_TIPS = {
+    observe: ['画像をスクロール・タップして所見を探します。', 'h-basic'],
+    quiz: ['IVUSを見ながら全問に答え、「回答を確定する」を押します。', 'h-scenario'],
+    plan: ['各項目で最も適切な方針を1つずつ選びます。', 'h-scenario'],
+    treat: ['デバイスを選ぶ → 位置を合わせる → 病変へ進める → 長押しで加圧 → 減圧して抜去 → IVUSで確認。', 'h-treat'],
+    result: ['判定基準ごとの合否と減点の内訳を確認できます。', 'h-criteria']
+  };
   function renderSide() {
     renderSteps();
     const b = $('#sideBody');
     if (S.phase !== 'treat') { $('#dock').hidden = true; }
-    if (S.phase === 'observe') b.innerHTML = observeHTML();
-    else if (S.phase === 'quiz') b.innerHTML = quizHTML();
-    else if (S.phase === 'plan') b.innerHTML = planHTML();
-    else if (S.phase === 'treat') b.innerHTML = treatHTML();
-    else if (S.phase === 'result') b.innerHTML = resultHTML();
+    const tip = PHASE_TIPS[S.phase];
+    let body = '';
+    if (S.phase === 'observe') body = observeHTML();
+    else if (S.phase === 'quiz') body = quizHTML();
+    else if (S.phase === 'plan') body = planHTML();
+    else if (S.phase === 'treat') body = treatHTML();
+    else if (S.phase === 'result') body = resultHTML();
+    b.innerHTML = (tip ? `<div class="side-help"><span>${tip[0]}</span><button type="button" data-help="${tip[1]}">詳しく</button></div>` : '') + body;
+    b.querySelectorAll('[data-help]').forEach(x => x.addEventListener('click', () => IV.help.open(x.dataset.help)));
     bindSide();
     updateToggles();
   }
@@ -425,6 +438,7 @@
     hb.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') off(); });
     hb.addEventListener('contextmenu', e => e.preventDefault());
     $('#deflBtn').addEventListener('click', finishActive);
+    setTimeout(() => IV.help.tour('dock'), 250);
     const pb = $('#pulseBtn');
     if (pb) pb.addEventListener('click', () => {
       const r = IV.ivlCycle(S.C, S.active.inf);
@@ -594,7 +608,7 @@
     on('#toPlan', () => { S.phase = 'plan'; renderSide(); $('#sideBody').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     document.querySelectorAll('[data-g]').forEach(b => b.addEventListener('click', () => { C.plan[b.dataset.g] = +b.dataset.k; renderSide(); }));
     on('#submitPlan', () => { S.planDone = true; renderSide(); });
-    on('#toTreat', () => { S.phase = 'treat'; devDefaults(S.tray.key); renderSide(); });
+    on('#toTreat', () => { S.phase = 'treat'; devDefaults(S.tray.key); renderSide(); setTimeout(() => IV.help.tour('treat'), 300); });
     document.querySelectorAll('[data-group]').forEach(b => b.addEventListener('click', () => { if (S.active) return; S.tray.group = b.dataset.group; devDefaults(IV.DEV_GROUPS.find(g => g.id === b.dataset.group).keys[0]); renderSide(); }));
     document.querySelectorAll('[data-dev]').forEach(b => b.addEventListener('click', () => { if (S.active) return; devDefaults(b.dataset.dev); renderSide(); }));
     const chg = (sel, fn) => { const e = $(sel); if (e) e.addEventListener('change', () => { fn(e.value); renderSide(); }); };
@@ -636,6 +650,8 @@
   /* ---------- stage controls ---------- */
   function bindStage() {
     $('#homeBtn').addEventListener('click', showHome);
+    $('#helpBtn').addEventListener('click', () => IV.help.open(S.screen === 'case' && S.phase === 'treat' ? 'h-treat' : null));
+    $('#heroHelp').addEventListener('click', () => IV.help.open());
     document.querySelectorAll('[data-freq]').forEach(b => b.addEventListener('click', () => setFreq(b.dataset.freq)));
     $('#tFreq').addEventListener('click', () => setFreq(S.freq === '60' ? '20' : '60'));
     $('#playBtn').addEventListener('click', () => { if (!S.playing && S.z >= IV.L - 0.01) S.z = 0; S.playing = !S.playing; updateToggles(); });
@@ -677,7 +693,7 @@
       S.caliper.type = S.tool; S.caliper.pts.push({ x, y });
     });
     window.addEventListener('keydown', e => {
-      if (S.screen !== 'case' || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName) || document.activeElement.id === 'holdBtn') return;
+      if (S.screen !== 'case' || !$('#help').hidden || IV.help.tourActive() || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName) || document.activeElement.id === 'holdBtn') return;
       if (e.key === 'ArrowRight') { S.z = clamp(S.z + DZ, 0, IV.L); S.playing = false; }
       if (e.key === 'ArrowLeft') { S.z = clamp(S.z - DZ, 0, IV.L); S.playing = false; }
     });

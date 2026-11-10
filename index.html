@@ -15,6 +15,7 @@
   <button id="homeBtn" class="brand" type="button" aria-label="ケース一覧へ戻る">IVUS<span>SIM</span></button>
   <div id="caseTitle" class="case-title"></div>
   <div id="vitals" class="vitals" aria-live="polite"></div>
+  <button type="button" id="helpBtn" class="help-btn" aria-label="使い方を開く"><span aria-hidden="true">?</span>使い方</button>
 </header>
 
 <main id="home" class="home">
@@ -27,6 +28,10 @@
       <p class="eyebrow">冠動脈インターベンション・トレーニング</p>
       <h1>IVUS<br>シミュレータ</h1>
       <p class="lead">合成したIVUS断層像とシネ画像を同期させて読影し、治療戦略を立て、バルーン・ステント・アテレクトミーを自分の手で操作します。治療後のIVUSで結果を確認し、EAPCI・ULTIMATE基準で評価します。</p>
+      <div class="start-row">
+        <button type="button" class="btn primary" id="heroHelp">はじめての方へ：使い方を見る</button>
+        <a class="btn" href="#caseList" id="heroCases">ケースを選ぶ ↓</a>
+      </div>
       <div class="setting">
         <span class="setting-label">IVUSカテーテル</span>
         <div class="seg" role="radiogroup" aria-label="IVUSカテーテルの種類">
@@ -43,6 +48,7 @@
       <li>IVUS画像・シネ画像はすべてプログラムで合成したもので、実在の患者画像ではありません。</li>
       <li>デバイスの挙動（コンプライアンス、最大拡張径、通過性など）はシミュレータ上の設定値です。実際の使用時は各製品の添付文書に従ってください。</li>
       <li>判定基準: EAPCI専門家コンセンサス（Räber 2018）、ULTIMATE基準（Zhang 2018）、LM 5-6-7-8ルール（Kang 2011）、IVUSカルシウムスコア（Zhang 2021）。</li>
+      <li>ライセンス: MIT License（Copyright © 2026 kntw-blip）・<a href="https://github.com/kntw-blip/IVUS-Simulator" target="_blank" rel="noopener">ソースコード（GitHub）</a></li>
     </ul>
   </section>
 </main>
@@ -98,6 +104,8 @@
 </main>
 
 <div id="modal" class="modal" hidden role="dialog" aria-modal="true"></div>
+<div id="help" class="help" hidden role="dialog" aria-modal="true" aria-label="使い方"></div>
+<div id="coach" class="coach" hidden></div>
 <div id="toast" class="toast" aria-live="assertive"></div>
 
 <script src="js/model.js"></script>
@@ -105,6 +113,7 @@
 <script src="js/scenarios.js"></script>
 <script src="js/treat.js"></script>
 <script src="js/angio.js"></script>
+<script src="js/help.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
